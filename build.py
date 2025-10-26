@@ -23,15 +23,16 @@ def bake(data):
 
 if __name__ == "__main__":
     def clone_if_missing(repo_url: str, dest: str):
-        print("[+] Doing : git clone the needed libs ...")
+        print(f"[+] Doing : git clone the needed libs {repo_url}...")
         dest_path = pathlib.Path(os.path.expanduser(dest))
         if (dest_path / ".git").is_dir():
+            print("[+] OK : No need to git clone ...")
             return  # déjà cloné
-    dest_path.mkdir(parents=True, exist_ok=True)  # s'assure que le parent existe
-    # si le dossier existe mais n'est pas un repo, on le vide (optionnel)
-    if dest_path.exists() and any(dest_path.iterdir()):
-        raise RuntimeError(f"Le dossier {dest_path} existe mais n'est pas un repo Git.")
-    subprocess.run(["git", "clone", "--depth=1", repo_url, str(dest_path)], check=True)
+        dest_path.mkdir(parents=True, exist_ok=True)  # s'assure que le parent existe
+        # si le dossier existe mais n'est pas un repo, on le vide (optionnel)
+        if dest_path.exists() and any(dest_path.iterdir()):
+            raise RuntimeError(f"Le dossier {dest_path} existe mais n'est pas un repo Git.")
+        subprocess.run(["git", "clone", "--depth=1", repo_url, str(dest_path)], check=True)
 
     clone_if_missing("https://github.com/hashicorp/yamux", "~/go/src/github.com/hashicorp/yamux")
     clone_if_missing("https://github.com/libp2p/go-reuseport", "~/go/src/github.com/libp2p/go-reuseport")
