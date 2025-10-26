@@ -3,12 +3,13 @@
 import os
 import base64
 import warnings
-import os
 import random
 import re
 import string
 import binascii
 import time
+import pathlib
+import subprocess
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 key = os.urandom(32)
@@ -21,16 +22,27 @@ def bake(data):
     return encoded
 
 if __name__ == "__main__":
+    def clone_if_missing(repo_url: str, dest: str):
+        print("[+] Doing : git clone the needed libs ...")
+        dest_path = pathlib.Path(os.path.expanduser(dest))
+        if (dest_path / ".git").is_dir():
+            return  # déjà cloné
+    dest_path.mkdir(parents=True, exist_ok=True)  # s'assure que le parent existe
+    # si le dossier existe mais n'est pas un repo, on le vide (optionnel)
+    if dest_path.exists() and any(dest_path.iterdir()):
+        raise RuntimeError(f"Le dossier {dest_path} existe mais n'est pas un repo Git.")
+    subprocess.run(["git", "clone", "--depth=1", repo_url, str(dest_path)], check=True)
 
+    clone_if_missing("https://github.com/hashicorp/yamux", "~/go/src/github.com/hashicorp/yamux")
+    clone_if_missing("https://github.com/libp2p/go-reuseport", "~/go/src/github.com/libp2p/go-reuseport")
+    clone_if_missing("https://go.googlesource.com/sys", "~/go/src/golang.org/x/sys")
     # clean & prep
     print("[+] Preparing Build...")
     os.system("rm files/keys/host* 2>/dev/null")
     os.system("rm files/keys/key*  2>/dev/null")
     os.system("mkdir -p files/keys 2>/dev/null")
     os.system("yes 'y' 2>/dev/null | ssh-keygen -t ed25519 -f files/keys/key -q -N \"\"")
-    os.system("yes 'y' 2>/dev/null | ssh-keygen -f host_dsa -N '' -t dsa -f files/keys/host_dsa -q -N \"\"")
-    os.system("yes 'y' 2>/dev/null | ssh-keygen -f host_rsa -N '' -t rsa -f files/keys/host_rsa -q -N \"\"")    
-
+    os.system("ssh-keygen -t rsa -f files/keys/host_rsa -q -N ''")
     # set random version string
     os.system("cp xc.go /tmp/xc.go.bak")
     with open("xc.go") as f:
